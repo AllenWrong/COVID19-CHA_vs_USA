@@ -18,7 +18,7 @@ def get_words(filename):
     try:
         pd.to_datetime(date)
     except:
-        return -1,-1
+        return -1, -1
     file.close()
 
     sentence_seged = posseg.cut(text)
