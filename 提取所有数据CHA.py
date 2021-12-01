@@ -21,7 +21,6 @@ def get_words(filename):
         return -1,-1
     file.close()
 
-
     sentence_seged = posseg.cut(text)
     word=[]
     for x in sentence_seged:
