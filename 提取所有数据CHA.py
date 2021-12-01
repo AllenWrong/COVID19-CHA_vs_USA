@@ -29,8 +29,6 @@ def get_words(filename):
             
     return word,date
 
-
-
 words =[]
 date = []
 classifier = []
