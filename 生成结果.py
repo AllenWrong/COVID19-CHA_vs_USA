@@ -58,24 +58,27 @@ def get_plot(d,n_components,filename,cloud_num_words=100):
 		ws = words[index].tolist()
 		i = lda.components_[t_index][index]
 		#cloud=WordCloud(font_path='C:/Windows/simhei.ttf')   #window
-		cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',scale=10,mask=mask)  #mac
+		cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',scale=8,mask=mask)  #mac
 		s=cloud.fit_words(dict(zip(ws,i)))
-		plt.figure(figsize=(20, 20))
+		plt.figure(figsize=(16, 16))
 		#plt.imshow(s)
 
 		cloud.to_file(filename+'%s.png'%t_index)
 
 
-def main(method,n_components,cloud_num_words=100):
+def main(method,n_components,lang="CHA",cloud_num_words=100):
 
-	try:
+	"""try:
 		shutil.rmtree('Img')
 	except:
 		pass
-	os.mkdir('Img')
+	os.mkdir('Img')"""
 
 	#method='年'
-	df=pd.read_csv('data/useful_data.csv',encoding='gbk')
+	file = 'useful_data_CHA.csv'
+	if lang=="ENG":
+		file='useful_data_ENG.csv'
+	df=pd.read_csv('data/%s'%file,encoding='gbk')
 	df.loc[:,'date']=pd.to_datetime(df.date)
 	df.set_index('date',inplace=True)
 	slic = []
@@ -101,8 +104,8 @@ def main(method,n_components,cloud_num_words=100):
 		d=df.loc[i[0]:i[1],:]
 		date = i[0]+'~'+i[1]
 		print('正在生成,' + date+',图像')
-		get_plot(d,n_components,'Img/国内,%s,'%date)
+		get_plot(d,n_components,'Img/%s/%s,%s,'%(method,lang,date))
 
 if __name__=="__main__":
 
-	main('年',5)
+	main('年',5,lang="ENG")

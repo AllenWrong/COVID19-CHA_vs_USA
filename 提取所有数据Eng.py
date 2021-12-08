@@ -3,7 +3,8 @@ from jieba import posseg
 from tqdm import tqdm
 import pandas as pd
 import json
-path = 'data/CHA/'
+import re
+path = 'data/Eng/'
 
 
 
@@ -23,12 +24,10 @@ def get_words(filename):
 
 
     sentence_seged = posseg.cut(text)
-    word=[]
-    for x in sentence_seged:
-        if x.flag=='n':
-            word.append(x.word)
+    words = re.split('[^0-9a-zA-Z]',text)
+
             
-    return word,date
+    return words,date
 
 
 
@@ -48,6 +47,7 @@ for i in os.listdir(path):
         filename=path+i+'/'+file
 
         w,d=get_words(filename)
+
         if w==-1:
             continue
         if len(w)<20:
@@ -64,4 +64,4 @@ try:
 except:
     pass
 df.set_index('date',inplace=True)
-df.to_csv('data/useful_data.csv',encoding='gbk')
+df.to_csv('data/useful_data_eng.csv',encoding='gbk')
