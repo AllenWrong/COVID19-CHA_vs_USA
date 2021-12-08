@@ -4,12 +4,13 @@ from tqdm import tqdm
 import pandas as pd
 import json
 import re
+from nltk import PorterStemmer
 path = 'data/Eng/'
 
 
 
 def get_words(filename):
-
+    porter = PorterStemmer()
     file=open(filename,'r')
     data=file.read().split('\n')
     if len(data)!=3:
@@ -25,8 +26,13 @@ def get_words(filename):
 
     sentence_seged = posseg.cut(text)
     words = re.split('[^0-9a-zA-Z]',text)
-
-            
+    new_words = []
+    for i in words:
+        if i=='':
+            continue
+        new_word = porter.stem(i)
+        if not new_word in new_words:
+            new_words.append(new_word)
     return words,date
 
 

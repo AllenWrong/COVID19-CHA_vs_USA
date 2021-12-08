@@ -21,7 +21,7 @@ def get_stop_words(filename):
     return stop_words
 
 
-def get_plot(d,n_components,filename,cloud_num_words=100):
+def get_plot(d,n_components,filename,cloud_num_words=100,lang="CHA"):
 	"""
 	d:              DataFrame ->  文件数据索引后的
 	n_components:   int       ->  主题数
@@ -51,7 +51,10 @@ def get_plot(d,n_components,filename,cloud_num_words=100):
 	words=pd.Series(words.tolist())
 	lda = LatentDirichletAllocation(n_components=n_components,learning_offset=50,max_iter=50)
 	docres = lda.fit_transform(new_word_array)
+
 	mask = imageio.imread('data/China.png')
+	if lang=="ENG":
+		mask = imageio.imread('data/USA.png')
 	for t_index in range(n_components):
 
 		index = lda.components_[t_index].argsort()[-cloud_num_words:]
@@ -104,8 +107,13 @@ def main(method,n_components,lang="CHA",cloud_num_words=100):
 		d=df.loc[i[0]:i[1],:]
 		date = i[0]+'~'+i[1]
 		print('正在生成,' + date+',图像')
-		get_plot(d,n_components,'Img/%s/%s,%s,'%(method,lang,date))
+		get_plot(d,n_components,'Img/%s/%s,%s,'%(method,lang,date),lang=lang)
 
 if __name__=="__main__":
 
-	main('年',5,lang="ENG")
+	main('季',3,lang="ENG")
+	main('半年', 3, lang="ENG")
+	main('年', 3, lang="ENG")
+	main('季', 3, lang="CHA")
+	main('半年', 3, lang="CHA")
+	main('年', 3, lang="CHA")
