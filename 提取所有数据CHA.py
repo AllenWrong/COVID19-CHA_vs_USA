@@ -32,6 +32,7 @@ def get_words(filename):
 words =[]
 date = []
 classifier = []
+which_file = []
 c=0
 for i in os.listdir(path):
 
@@ -49,13 +50,14 @@ for i in os.listdir(path):
             continue
         if len(w)<20:
             continue
-        w=' '.join(w)
+
+
         words.append(w)
         date.append(d)
         classifier.append(c)
-
+        which_file.append('%s/%s'%(i,file))
     c += 1
-df=pd.DataFrame({'date':date,'content':words,'class':classifier})
+df=pd.DataFrame({'date':date,'content':words,'class':classifier,'file':which_file})
 try:
     df.loc[:,'date']=pd.to_datetime(df.date)
 except:
