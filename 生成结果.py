@@ -1,8 +1,10 @@
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import chi2,SelectKBest
 from sklearn.decomposition import LatentDirichletAllocation
 import json
+
 from matplotlib import pyplot as plt
 from wordcloud import WordCloud
 from sklearn.cluster import KMeans
@@ -26,13 +28,16 @@ def save_doc_title_matrix(n_components,data,filename,indexs):
 
 	df.to_excel(filename+'文档_主题矩阵.xlsx')
 
+def save_word_dict(df,filename):
+	df.to_excel(filename+'词典.xlsx')
+
 def save_title_word_matrix(n_components,data,filename,columns):
 	indexs = ['主题%s'%i for i in range(1,n_components+1)]
 	df = pd.DataFrame(data, columns=columns, index=indexs)
 
 	df.to_excel(filename + '主题_词矩阵.xlsx')
 	pass
-def get_plot(d,n_components,filename,cloud_num_words=150,lang="CHA",method='半年',which_file=None):
+def get_plot(d,n_components,filename,cloud_num_words=400,lang="CHA",method='半年',which_file=None):
 	"""
 	d:              DataFrame ->  文件数据索引后的
 	n_components:   int       ->  主题数
@@ -45,12 +50,22 @@ def get_plot(d,n_components,filename,cloud_num_words=150,lang="CHA",method='半�
 	stop_words = get_stop_words('data/stop_words.txt')
 	data=d['content'].values.tolist()
 	classifier = d['class'].tolist()
-	cotVector = CountVectorizer(stop_words=stop_words)
-	vector=cotVector.fit_transform(data)
-	word_array = vector.toarray()
-	feature_name = cotVector.get_feature_names()
+
+	if lang=="ENG":
+		cotVector = CountVectorizer(stop_words=stop_words)
+		vector=cotVector.fit_transform(data)
+		word_array = vector.toarray()
+		feature_name = cotVector.get_feature_names()
+	else:
+		print("tf-idf .......")
+		tf_idf = TfidfVectorizer()
+		p = tf_idf.fit_transform(data)
+		feature_name=tf_idf.get_feature_names()
+		word_array = p.toarray()
+
 	feature_name[:10]
 	words = pd.Series(feature_name)
+	print("tf-idf successful !!")
 	#print("LDA......")
 	#lda = LatentDirichletAllocation(n_components=n_components,learning_offset=50,max_iter=50)
 	#docres = lda.fit_transform(word_array)
@@ -62,7 +77,7 @@ def get_plot(d,n_components,filename,cloud_num_words=150,lang="CHA",method='半�
 	print("聚类 successful !!")
 	print("chi.....")
 	f,p_value = chi2(word_array,classifier)
-	model=SelectKBest(chi2,k=200)   #选取200个词
+	model=SelectKBest(chi2,k=cloud_num_words)   #选取200个词
 	print("chi successful !!")
 	new_word_array = model.fit_transform(word_array,classifier)
 	words=words[model.get_support()]
@@ -78,9 +93,12 @@ def get_plot(d,n_components,filename,cloud_num_words=150,lang="CHA",method='半�
 	print("正在绘制画像....")
 	if lang=="ENG":
 		mask = imageio.imread('data/USA.png')
-
+	#words_dict = []
+	#themes = []
+	au_word = ['']*1000
+	word_df = pd.DataFrame()
 	for t_index in range(n_components):
-
+		#themes.append("主题%s"%(t_index+1))
 		index = lda.components_[t_index].argsort()[-cloud_num_words:]
 		ws = words[index].tolist()
 		i = lda.components_[t_index][index]
@@ -89,8 +107,12 @@ def get_plot(d,n_components,filename,cloud_num_words=150,lang="CHA",method='半�
 		s=cloud.fit_words(dict(zip(ws,i)))
 		plt.figure(figsize=(12, 12))
 		#plt.imshow(s)
-
+		ws = ws + au_word
+		word_df['主题%s'%(t_index+1)]=ws[:cloud_num_words]
 		cloud.to_file(filename+'%s.png'%t_index)
+
+
+	save_word_dict(word_df,'word_features'+filename[3:])
 	print("绘制成功....")
 
 def main(method,n_components,lang="CHA",cloud_num_words=100):
@@ -130,19 +152,29 @@ def main(method,n_components,lang="CHA",cloud_num_words=100):
 
 	for i in slic:
 
+
 		d=df.loc[i[0]:i[1],['content','class']]
 
 		which_file = df.loc[i[0]:i[1],'file'].tolist()
 		date = i[0]+'~'+i[1]
+		print(date)
 		print('正在生成,' + date+',图像')
 		get_plot(d,n_components,'Img/%s/%s,%s,'%(method,lang,date),lang=lang,method=method,which_file=which_file)
 
+def start(method="年",n_components=3):
+	try:
+		shutil.rmtree('Img/%s'%method)
+		os.mkdir('Img/%s'%method)
+	except:
+		pass
+	main(method, n_components, lang="ENG")
+	main(method, n_components, lang="CHA")
+
 if __name__=="__main__":
+	start('半年',3)
+	"""main('季',3,lang="ENG")
+	main('季', 3, lang="CHA")
+	main('半年', 3, lang="ENG")"""
 
-	#main('季',3,lang="ENG")
 
-	#main('半年', 3, lang="ENG")
-	#main('年', 3, lang="ENG")
-	#main('季', 3, lang="CHA")
-	main('半年', 3, lang="CHA")
-	#main('年', 3, lang="CHA")
+	#main('半年', 3, lang="CHA")

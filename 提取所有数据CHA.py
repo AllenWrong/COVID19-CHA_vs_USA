@@ -4,11 +4,22 @@ from tqdm import tqdm
 import pandas as pd
 import json
 path = 'data/CHA/'
+"""
+数据预处理阶段，对所有的中文文档(.txt)中提取出词，并统一放到一个exel中，方便后期的lda读取
+"""
 
+def get_stop_words(filename):
+    file=open(filename,'r',encoding='gbk')
+    stop_words = file.read().split('\n')
+    file.close()
+    return stop_words
 
+def get_words(filename,stop_words):
+    """
 
-def get_words(filename):
-
+    :param filename:
+    :return: list -> word
+    """
     file=open(filename,'r')
     data=file.read().split('\n')
     if len(data)!=3:
@@ -24,7 +35,7 @@ def get_words(filename):
     sentence_seged = posseg.cut(text)
     word=[]
     for x in sentence_seged:
-        if x.flag=='n':
+        if x.flag=='n' and (not x.word in stop_words):
             word.append(x.word)
             
     return word,date
@@ -34,6 +45,8 @@ date = []
 classifier = []
 which_file = []
 c=0
+
+stop_words = get_stop_words('data/stop_words.txt')
 for i in os.listdir(path):
 
     if i[0]=='.':
@@ -45,7 +58,7 @@ for i in os.listdir(path):
             continue
         filename=path+i+'/'+file
 
-        w,d=get_words(filename)
+        w,d=get_words(filename,stop_words)
         if w==-1:
             continue
         if len(w)<20:
