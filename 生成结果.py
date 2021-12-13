@@ -32,7 +32,7 @@ def save_title_word_matrix(n_components,data,filename,columns):
 
 	df.to_excel(filename + '主题_词矩阵.xlsx')
 	pass
-def get_plot(d,n_components,filename,cloud_num_words=100,lang="CHA",method='半年',which_file=None):
+def get_plot(d,n_components,filename,cloud_num_words=150,lang="CHA",method='半年',which_file=None):
 	"""
 	d:              DataFrame ->  文件数据索引后的
 	n_components:   int       ->  主题数
@@ -51,13 +51,14 @@ def get_plot(d,n_components,filename,cloud_num_words=100,lang="CHA",method='半�
 	feature_name = cotVector.get_feature_names()
 	feature_name[:10]
 	words = pd.Series(feature_name)
-	print("LDA......")
-	lda = LatentDirichletAllocation(n_components=n_components,learning_offset=50,max_iter=50)
-	docres = lda.fit_transform(word_array)
-	print("LDA successful !!")
+	#print("LDA......")
+	#lda = LatentDirichletAllocation(n_components=n_components,learning_offset=50,max_iter=50)
+	#docres = lda.fit_transform(word_array)
+	#print("LDA successful !!")
 	print("正在进行聚类......")
 	model=KMeans(n_clusters=n_components)
-	classifier=model.fit_predict(docres)
+	#classifier=model.fit_predict(docres)
+	classifier = model.fit_predict(word_array)
 	print("聚类 successful !!")
 	print("chi.....")
 	f,p_value = chi2(word_array,classifier)
@@ -84,7 +85,7 @@ def get_plot(d,n_components,filename,cloud_num_words=100,lang="CHA",method='半�
 		ws = words[index].tolist()
 		i = lda.components_[t_index][index]
 		#cloud=WordCloud(font_path='C:/Windows/simhei.ttf')   #window
-		cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',scale=10,mask=mask)  #mac
+		cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',background_color="white",scale=10,mask=mask)  #mac
 		s=cloud.fit_words(dict(zip(ws,i)))
 		plt.figure(figsize=(12, 12))
 		#plt.imshow(s)
@@ -93,18 +94,20 @@ def get_plot(d,n_components,filename,cloud_num_words=100,lang="CHA",method='半�
 	print("绘制成功....")
 
 def main(method,n_components,lang="CHA",cloud_num_words=100):
+	"""
 
-	"""try:
-		shutil.rmtree('Img')
-	except:
-		pass
-	os.mkdir('Img')"""
+	:param method:           str  -> 时间段，可选年，季，半年
+	:param n_components:     int  -> 主题数
+	:param lang:  			 str  -> 语言，可选CHA and ENG
+	:param cloud_num_words:  int  -> 绘制词云显示的词的个数
+	:return:  None
+	"""
 
 	#method='年'
 	file = 'useful_data_CHA.csv'
 	if lang=="ENG":
 		file='useful_data_ENG.csv'
-	df=pd.read_csv('data/%s'%file,encoding='gbk').head(100)
+	df=pd.read_csv('data/%s'%file,encoding='gbk')
 	df.loc[:,'date']=pd.to_datetime(df.date)
 	df.set_index('date',inplace=True)
 	slic = []
@@ -136,10 +139,10 @@ def main(method,n_components,lang="CHA",cloud_num_words=100):
 
 if __name__=="__main__":
 
-	main('季',3,lang="ENG")
-	assert 1==0
-	main('半年', 3, lang="ENG")
-	main('年', 3, lang="ENG")
-	main('季', 3, lang="CHA")
+	#main('季',3,lang="ENG")
+
+	#main('半年', 3, lang="ENG")
+	#main('年', 3, lang="ENG")
+	#main('季', 3, lang="CHA")
 	main('半年', 3, lang="CHA")
-	main('年', 3, lang="CHA")
+	#main('年', 3, lang="CHA")
