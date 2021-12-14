@@ -102,8 +102,8 @@ def get_plot(d,n_components,filename,cloud_num_words=400,lang="CHA",method='半�
 		index = lda.components_[t_index].argsort()[-cloud_num_words:]
 		ws = words[index].tolist()
 		i = lda.components_[t_index][index]
-		#cloud=WordCloud(font_path='C:/Windows/simhei.ttf')   #window
-		cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',background_color="white",scale=10,mask=mask)  #mac
+		cloud=WordCloud(font_path='C:/Windows/simhei.ttf', scale=6, mask=mask,background_color="white")   #window
+		# cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',background_color="white",scale=10,mask=mask)  #mac
 		s=cloud.fit_words(dict(zip(ws,i)))
 		plt.figure(figsize=(12, 12))
 		#plt.imshow(s)
@@ -161,6 +161,7 @@ def main(method,n_components,lang="CHA",cloud_num_words=100):
 		print('正在生成,' + date+',图像')
 		get_plot(d,n_components,'Img/%s/%s,%s,'%(method,lang,date),lang=lang,method=method,which_file=which_file)
 
+
 def start(method="年",n_components=3):
 	try:
 		shutil.rmtree('Img/%s'%method)
@@ -169,6 +170,7 @@ def start(method="年",n_components=3):
 		pass
 	main(method, n_components, lang="ENG")
 	main(method, n_components, lang="CHA")
+
 
 if __name__=="__main__":
 	start('半年',3)
