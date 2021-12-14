@@ -1,8 +1,10 @@
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import chi2,SelectKBest
 from sklearn.decomposition import LatentDirichletAllocation
 import json
+
 from matplotlib import pyplot as plt
 from wordcloud import WordCloud
 from sklearn.cluster import KMeans
@@ -20,62 +22,114 @@ def get_stop_words(filename):
     file.close()
     return stop_words
 
+def save_doc_title_matrix(n_components,data,filename,indexs):
+	columns = ['主题%s'%i for i in range(1,n_components+1)]
+	df = pd.DataFrame(data,columns=columns,index=indexs)
 
-def get_plot(d,n_components,filename,cloud_num_words=100):
+	df.to_excel(filename+'文档_主题矩阵.xlsx')
+
+def save_word_dict(df,filename):
+	df.to_excel(filename+'词典.xlsx')
+
+def save_title_word_matrix(n_components,data,filename,columns):
+	indexs = ['主题%s'%i for i in range(1,n_components+1)]
+	df = pd.DataFrame(data, columns=columns, index=indexs)
+
+	df.to_excel(filename + '主题_词矩阵.xlsx')
+	pass
+def get_plot(d,n_components,filename,cloud_num_words=400,lang="CHA",method='半年',which_file=None):
 	"""
 	d:              DataFrame ->  文件数据索引后的
 	n_components:   int       ->  主题数
 	filename:       str       ->  文件名,例如 '国内,2021-1～2021-7,'  
 	cloud_num_words int       ->  每张词云显示词的个数
 
+	which_file : 记录着每个样本的文档名
 	return 
 	"""
 	stop_words = get_stop_words('data/stop_words.txt')
 	data=d['content'].values.tolist()
 	classifier = d['class'].tolist()
-	cotVector = CountVectorizer(stop_words=stop_words)
-	vector=cotVector.fit_transform(data)
-	word_array = vector.toarray()
-	feature_name = cotVector.get_feature_names()
+
+	if lang=="ENG":
+		cotVector = CountVectorizer(stop_words=stop_words)
+		vector=cotVector.fit_transform(data)
+		word_array = vector.toarray()
+		feature_name = cotVector.get_feature_names()
+	else:
+		print("tf-idf .......")
+		tf_idf = TfidfVectorizer()
+		p = tf_idf.fit_transform(data)
+		feature_name=tf_idf.get_feature_names()
+		word_array = p.toarray()
+
 	feature_name[:10]
 	words = pd.Series(feature_name)
-	lda = LatentDirichletAllocation(n_components=n_components,learning_offset=50,max_iter=50)
-	docres = lda.fit_transform(word_array)
-
+	print("tf-idf successful !!")
+	#print("LDA......")
+	#lda = LatentDirichletAllocation(n_components=n_components,learning_offset=50,max_iter=50)
+	#docres = lda.fit_transform(word_array)
+	#print("LDA successful !!")
+	print("正在进行聚类......")
 	model=KMeans(n_clusters=n_components)
-	classifier=model.fit_predict(docres)
+	#classifier=model.fit_predict(docres)
+	classifier = model.fit_predict(word_array)
+	print("聚类 successful !!")
+	print("chi.....")
 	f,p_value = chi2(word_array,classifier)
-	model=SelectKBest(chi2,k=400)
+	model=SelectKBest(chi2,k=cloud_num_words)   #选取200个词
+	print("chi successful !!")
 	new_word_array = model.fit_transform(word_array,classifier)
 	words=words[model.get_support()]
 	words=pd.Series(words.tolist())
+	print("LDA....")
 	lda = LatentDirichletAllocation(n_components=n_components,learning_offset=50,max_iter=50)
 	docres = lda.fit_transform(new_word_array)
-	mask = imageio.imread('data/China.png')
-	for t_index in range(n_components):
+	save_doc_title_matrix(n_components,docres,'word_features'+filename[3:],which_file)     #保存文档主题矩阵
+	save_title_word_matrix(n_components,lda.components_,'word_features'+filename[3:],words.tolist())    #保存主题——词矩阵
 
+	print("LDA successful !!!")
+	mask = imageio.imread('data/China.png')
+	print("正在绘制画像....")
+	if lang=="ENG":
+		mask = imageio.imread('data/USA.png')
+	#words_dict = []
+	#themes = []
+	au_word = ['']*1000
+	word_df = pd.DataFrame()
+	for t_index in range(n_components):
+		#themes.append("主题%s"%(t_index+1))
 		index = lda.components_[t_index].argsort()[-cloud_num_words:]
 		ws = words[index].tolist()
 		i = lda.components_[t_index][index]
 		#cloud=WordCloud(font_path='C:/Windows/simhei.ttf')   #window
-		cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',scale=10,mask=mask)  #mac
+		cloud = WordCloud(font_path='/system/library/fonts/Hiragino Sans GB.ttc',background_color="white",scale=10,mask=mask)  #mac
 		s=cloud.fit_words(dict(zip(ws,i)))
-		plt.figure(figsize=(20, 20))
+		plt.figure(figsize=(12, 12))
 		#plt.imshow(s)
-
+		ws = ws + au_word
+		word_df['主题%s'%(t_index+1)]=ws[:cloud_num_words]
 		cloud.to_file(filename+'%s.png'%t_index)
 
 
-def main(method,n_components,cloud_num_words=100):
+	save_word_dict(word_df,'word_features'+filename[3:])
+	print("绘制成功....")
 
-	try:
-		shutil.rmtree('Img')
-	except:
-		pass
-	os.mkdir('Img')
+def main(method,n_components,lang="CHA",cloud_num_words=100):
+	"""
+
+	:param method:           str  -> 时间段，可选年，季，半年
+	:param n_components:     int  -> 主题数
+	:param lang:  			 str  -> 语言，可选CHA and ENG
+	:param cloud_num_words:  int  -> 绘制词云显示的词的个数
+	:return:  None
+	"""
 
 	#method='年'
-	df=pd.read_csv('data/useful_data.csv',encoding='gbk')
+	file = 'useful_data_CHA.csv'
+	if lang=="ENG":
+		file='useful_data_ENG.csv'
+	df=pd.read_csv('data/%s'%file,encoding='gbk')
 	df.loc[:,'date']=pd.to_datetime(df.date)
 	df.set_index('date',inplace=True)
 	slic = []
@@ -98,11 +152,29 @@ def main(method,n_components,cloud_num_words=100):
 
 	for i in slic:
 
-		d=df.loc[i[0]:i[1],:]
+
+		d=df.loc[i[0]:i[1],['content','class']]
+
+		which_file = df.loc[i[0]:i[1],'file'].tolist()
 		date = i[0]+'~'+i[1]
+		print(date)
 		print('正在生成,' + date+',图像')
-		get_plot(d,n_components,'Img/国内,%s,'%date)
+		get_plot(d,n_components,'Img/%s/%s,%s,'%(method,lang,date),lang=lang,method=method,which_file=which_file)
+
+def start(method="年",n_components=3):
+	try:
+		shutil.rmtree('Img/%s'%method)
+		os.mkdir('Img/%s'%method)
+	except:
+		pass
+	main(method, n_components, lang="ENG")
+	main(method, n_components, lang="CHA")
 
 if __name__=="__main__":
+	start('半年',3)
+	"""main('季',3,lang="ENG")
+	main('季', 3, lang="CHA")
+	main('半年', 3, lang="ENG")"""
 
-	main('年',5)
+
+	#main('半年', 3, lang="CHA")
